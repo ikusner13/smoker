@@ -3,10 +3,36 @@
   <head>
     <title>Connect Four</title>
     <style>
+      body {
+        max-height: 100vh;
+      }
+
       .info {
         display: flex;
         width: 100%;
         justify-content: space-between;
+        margin-bottom: 1rem;
+        position: sticky;
+        background-color: white;
+        top: 0;
+      }
+
+      .scroll-section {
+        overflow-y: scroll;
+      }
+
+      #setpoint,
+      #current-temp {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }
+
+      #root {
+        display: flex;
+        flex-direction: column-reverse;
+        justify-content: space-between;
+        position: relative;
       }
     </style>
   </head>
@@ -14,16 +40,15 @@
     <div id="root">
       <div class="info">
         <div id="setpoint">
-          <h2>Setpoint</h2>
+          <h2>Setpoint:</h2>
           <div id="setpoint-value"></div>
         </div>
         <div id="current-temp">
-          <h2>Current Temperature</h2>
+          <h2>Current Temperature:</h2>
           <div id="current-temp-value"></div>
         </div>
       </div>
-      <br />
-      <div id="console"></div>
+      <div id="console" class="scroll-section"></div>
     </div>
     <script src="main.js" type="module"></script>
   </body>
