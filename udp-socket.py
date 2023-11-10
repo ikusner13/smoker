@@ -19,7 +19,7 @@ async def udp_receiver(host, port, queue):
         try:
             data = await asyncio.get_event_loop().sock_recv(sock, 1024)
             humans = msgpack.unpackb(data)
-            print(f"UDP receiver received: {humans}")
+            #print(f"UDP receiver received: {humans}")
             await queue.put(humans)
         except asyncio.CancelledError:
             break
@@ -28,38 +28,97 @@ async def udp_receiver(host, port, queue):
     sock.close()
     print("UDP receiver stopped.")
 
+async def send_to_udp_server(host, port, message):
+    udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        udp_sock.sendto(message, (host, port))
+    finally:
+        udp_sock.close()
+
 # WebSocket handler
 async def websocket_handler(websocket, path, queue):
-    while not shutdown_event.is_set():
+    active_tasks = []
+
+    async def receive_from_client():
         try:
-            humans = await queue.get()
-            json_data = json.dumps(humans)
-            print(f">>> {json_data}")
-            await websocket.send(json_data)
+            while not shutdown_event.is_set():
+                message = await websocket.recv()
+                print(f"Received from client: {message}")
+                # Process the message (e.g., forward to UDP server)
+                await send_to_udp_server('localhost', 65487, msgpack.packb({'message': message}))
+        except websockets.exceptions.ConnectionClosed:
+            print("Client disconnected. Doing cleanup.")
+            cancel_tasks()
         except asyncio.CancelledError:
-            break
+            pass  # Task was cancelled, normal during shutdown
         except Exception as e:
-            print(f"Exception in WebSocket handler: {e}")
+            print(f"Exception in receive_from_client: {e}")
 
-# Manual shutdown trigger
-async def manual_shutdown():
-    await asyncio.to_thread(input, "Press Enter to stop the server...\n")
+    async def send_to_client():
+        try:
+            while not shutdown_event.is_set():
+                humans = await queue.get()
+                json_data = json.dumps(humans)
+                if websocket.open:
+                    await websocket.send(json_data)
+                queue.task_done()
+        except websockets.exceptions.ConnectionClosed:
+            print("Client disconnected. Doing cleanup.")
+            cancel_tasks()
+        except asyncio.CancelledError:
+            pass  # Task was cancelled, normal during shutdown
+        except Exception as e:
+            print(f"Exception in send_to_client: {e}")
+
+    def cancel_tasks():
+        for task in active_tasks:
+            task.cancel()
+
+    receive_task = asyncio.create_task(receive_from_client())
+    send_task = asyncio.create_task(send_to_client())
+    active_tasks.extend([receive_task, send_task])
+
+    await asyncio.gather(*active_tasks, return_exceptions=True)
+    active_tasks.clear()
+
+async def shutdown(server, tasks):
+    # Set shutdown event
     shutdown_event.set()
+    
+    # Close the server
+    server.close()
+    await server.wait_closed()
 
-# Main coroutine
+    # Cancel all running tasks
+    for task in tasks:
+        task.cancel()
+
+    # Wait for tasks to finish
+    await asyncio.gather(*tasks, return_exceptions=True)
+
 async def main():
     queue = asyncio.Queue()
+
+    # Create UDP receiver task
     udp_task = asyncio.create_task(udp_receiver(host, 65488, queue))
-    ws_server = await websockets.serve(
+
+    # Start WebSocket server
+    server = await websockets.serve(
         lambda ws, path: websocket_handler(ws, path, queue),
         "localhost", 8001
     )
 
-    await manual_shutdown()
-    udp_task.cancel()
-    ws_server.close()
-    await ws_server.wait_closed()
-    print("WebSocket server stopped.")
+    tasks = [udp_task]
 
-# Run the main coroutine
-asyncio.run(main())
+    # Wait for shutdown signal
+    await shutdown_event.wait()
+
+    # Run the shutdown routine
+    await shutdown(server, tasks)
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("Shutting down...")
+        shutdown_event.set()  # Trigger the shutdown event

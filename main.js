@@ -1,7 +1,25 @@
+//@ts-check
+
 window.addEventListener("DOMContentLoaded", () => {
   // Open the WebSocket connection and register event handlers.
   const websocket = new WebSocket("ws://localhost:8001/");
-  receiveMessage(websocket);
+  receiveMessageHandler(websocket);
+
+  const form = document.getElementById("temp-form");
+
+  form?.addEventListener("submit", (event) => {
+    event.preventDefault();
+
+    if (!websocket || !form) return;
+
+    const formData = new FormData(form);
+
+    const setpoint = formData.get("setpoint-temp");
+
+    if (!setpoint) return;
+
+    websocket.send(setpoint?.toString());
+  });
 });
 
 function parseMessage(message) {
@@ -19,7 +37,7 @@ function parseMessage(message) {
   return [keyValuePairs[0], keyValuePairs[1]];
 }
 
-function receiveMessage(websocket) {
+function receiveMessageHandler(websocket) {
   websocket.addEventListener("message", ({ data }) => {
     console.log(data);
     return;
