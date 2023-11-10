@@ -18,7 +18,7 @@ async def udp_receiver(host, port, queue):
     while not shutdown_event.is_set():
         try:
             data = await asyncio.get_event_loop().sock_recv(sock, 1024)
-            humans = msgpack.unpackb(data)
+            humans = data.decode()
             #print(f"UDP receiver received: {humans}")
             await queue.put(humans)
         except asyncio.CancelledError:

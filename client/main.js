@@ -39,8 +39,6 @@ function parseMessage(message) {
 
 function receiveMessageHandler(websocket) {
   websocket.addEventListener("message", ({ data }) => {
-    console.log(data);
-    return;
     const message = parseMessage(JSON.parse(data));
 
     const setpoint = message[0][1];

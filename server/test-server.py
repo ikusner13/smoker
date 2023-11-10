@@ -11,21 +11,22 @@ def udp_server():
     
     print(f"UDP server started at {socket.gethostname()} on port 65487")
 
-    count = 0
+    # Initial values for setpoint and currentTemp
+    setpoint = 25.0  # Example setpoint value
+    currentTemp = 22.5  # Example current temperature value
+
     while True:
-        # Create a sample packet as a Python dictionary
-        data = {"count": count, "message": "Hello, world!"}
+        # Format the data as a string in the required format
+        data = f"setpoint={setpoint}; currentTemp={currentTemp}"
         
-        # Serialize the data using msgpack
-        serialized_data = msgpack.packb(data)
-        
-        # Send the serialized data to the same address and port (for demonstration)
-        server_socket.sendto(serialized_data, (socket.gethostname(), 65488))
+        # Send the data string to the specified address and port
+        server_socket.sendto(data.encode(), (socket.gethostname(), 65488))
         
         print(f"Packet sent: {data}")
         
-        # Increment the count
-        count += 1
+        # Increment the setpoint and currentTemp for demonstration
+        setpoint += 0.1
+        currentTemp += 0.1
         
         # Wait for 1 second before sending the next packet
         time.sleep(1)

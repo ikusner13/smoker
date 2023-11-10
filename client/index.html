@@ -5,58 +5,169 @@
     <style>
       body {
         max-height: 100vh;
+        height: 100vh;
       }
 
-      .info {
+      .section-wrapper {
+        padding: 12px;
+      }
+
+      .container {
+        margin: auto;
+      }
+
+      .grid-layout {
+        display: grid;
+        gap: 6px;
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      .setpoint-section,
+      .current-temp-section {
         display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+
+      .current-temp-section {
+        align-items: flex-end;
+      }
+
+      .setpoint-title,
+      .current-temp-title {
+        font-size: 24px;
+        font-weight: bold;
+        letter-spacing: -0.05em;
+      }
+
+      .setpoint-value,
+      .current-temp-value {
+        font-size: 20px;
+        color: #71717a;
+      }
+
+      .input-section {
+        display: grid;
         width: 100%;
-        justify-content: space-between;
-        margin-bottom: 1rem;
-        position: sticky;
-        background-color: white;
-        top: 0;
-      }
-
-      .scroll-section {
-        overflow-y: scroll;
-      }
-
-      #setpoint,
-      #current-temp {
-        display: flex;
         align-items: center;
-        gap: 1rem;
+        gap: 6px;
       }
 
-      #root {
-        display: flex;
-        flex-direction: column-reverse;
-        justify-content: space-between;
+      .input-label {
+        font-size: 14px;
+        font-weight: medium;
+        cursor: not-allowed;
+        opacity: 0.7;
+      }
+
+      .input-field {
+        height: 40px;
+        border-radius: 8px;
+        border: 1px solid #e5e7eb;
+        background-color: #f3f4f6;
+        padding: 2px 12px;
+        font-size: 14px;
+        outline: none;
+        transition: outline 0.2s;
+      }
+
+      .input-field:focus-visible {
+        outline: 2px solid #2563eb;
+        outline-offset: 2px;
+      }
+
+      .submit-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        font-weight: medium;
+        height: 40px;
+        width: 100%;
+        margin-top: 8px;
+        background-color: #111827;
+        color: #f9fafb;
+        border-radius: 8px;
+        padding: 8px 16px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+      }
+
+      .submit-button:hover {
+        background-color: rgba(59, 130, 246, 0.9);
+      }
+
+      .log-section {
         position: relative;
+        height: 288px;
+        width: 100%;
+        margin-top: 32px;
+        max-width: 576px;
+        border-radius: 8px;
+        border: 1px solid #e5e7eb;
+        overflow: auto;
+      }
+
+      .log-container {
+        height: 100%;
+        width: 100%;
+        border-radius: inherit;
+        overflow: hidden scroll;
+      }
+
+      .log-content {
+        padding: 16px;
+        font-size: 14px;
+      }
+
+      .log-title {
+        margin-bottom: 16px;
+        font-size: 18px;
+        font-weight: medium;
+      }
+
+      .log-entry {
+        margin-top: 16px;
+        line-height: 28px;
       }
     </style>
   </head>
   <body>
-    <div id="root">
-      <div class="info">
-        <div id="setpoint">
-          <h2>Setpoint:</h2>
-          <div id="setpoint-value"></div>
+    <section class="section-wrapper">
+      <div class="container">
+        <div class="grid-layout">
+          <div class="setpoint-section">
+            <h2 class="setpoint-title">Setpoint Value</h2>
+            <p class="setpoint-value" id="setpoint-value"></p>
+          </div>
+          <form class="input-section" id="temp-form">
+            <label class="input-label" for="setpoint">Set New Setpoint</label>
+            <input
+              class="input-field"
+              id="setpoint-temp"
+              name="setpoint-temp"
+              placeholder="Setpoint in °F"
+              type="number"
+              min="0"
+              max="100"
+            />
+            <button class="submit-button" type="submit">Update Setpoint</button>
+          </form>
+          <div class="current-temp-section">
+            <h2 class="current-temp-title">Current Temperature</h2>
+            <p class="current-temp-value" id="current-temp-value"></p>
+          </div>
         </div>
-        <div id="current-temp">
-          <h2>Current Temperature:</h2>
-          <div id="current-temp-value"></div>
+        <div class="log-section">
+          <div class="log-container">
+            <div class="log-content" id="console">
+              <h4 class="log-title">Temperature Log</h4>
+            </div>
+          </div>
         </div>
       </div>
-      <div>
-        <form id="temp-form">
-          <label for="setpoint-temp">Set Temperature:</label>
-          <input type="number" id="setpoint-temp" name="setpoint-temp" min="0" max="100" />
-          <button type="submit">Submit</button
-        </form>
-      </div>
-      <div id="console" class="scroll-section"></div>
-    </div>
+    </section>
+
     <script src="main.js" type="module"></script>
   </body>
 </html>
