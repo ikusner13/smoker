@@ -1,81 +1,65 @@
 import asyncio
-import threading
 import socket
-import queue
-import pprint
-import msgpack
 import websockets
+import msgpack
 import json
 
-# Initialize queue and pretty printer
-q = queue.Queue(64)
-pp = pprint.PrettyPrinter(indent=4)
+host = socket.gethostname()
 
-client_connected = False
+shutdown_event = asyncio.Event()
 
+# Asynchronous UDP receiver
+async def udp_receiver(host, port, queue):
+    print("UDP receiver started")
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.bind((host, port))
+    sock.setblocking(False)
 
-# UDP Receiver Thread
-class Receiver(threading.Thread):
-    def __init__(self):
-        self.result = None
-        threading.Thread.__init__(self)
-
-    def run(self):
+    while not shutdown_event.is_set():
         try:
-            self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            self.sock.bind((socket.gethostname(), 65488))
-            print("Receiver thread started. Listening for UDP packets...")
-            while True:
-                res = self.sock.recv(2048)
-                if not res:
-                    print("Received empty packet. Continuing...")
-                    continue
-                humans = msgpack.unpackb(res)
-                print(f"Received UDP packet: {humans}")
-
-                if client_connected:
-                  q.put(humans, True)
+            data = await asyncio.get_event_loop().sock_recv(sock, 1024)
+            humans = msgpack.unpackb(data)
+            print(f"UDP receiver received: {humans}")
+            await queue.put(humans)
+        except asyncio.CancelledError:
+            break
         except Exception as e:
-            print(f"Exception in Receiver thread: {e}")
+            print(f"Exception in UDP receiver: {e}")
+    sock.close()
+    print("UDP receiver stopped.")
 
-# WebSocket Handler
-async def websocket_handler(websocket, path):
-  global client_connected  # Use the global flag
-  client_connected = True  # Set to True when a client connects
-  try:
-    while True:
-      if not q.empty():
-        humans = q.get(True)
-        print(f"Sending via WebSocket: {humans}")
-        json_data = json.dumps(humans)
-        await websocket.send(json_data)
-        
-  except websockets.exceptions.ConnectionClosedError:
-      print("WebSocket connection closed.")
-  except Exception as e:
-      print(f"Exception occurred: {e}")
+# WebSocket handler
+async def websocket_handler(websocket, path, queue):
+    while not shutdown_event.is_set():
+        try:
+            humans = await queue.get()
+            json_data = json.dumps(humans)
+            print(f">>> {json_data}")
+            await websocket.send(json_data)
+        except asyncio.CancelledError:
+            break
+        except Exception as e:
+            print(f"Exception in WebSocket handler: {e}")
 
-# WebSocket server in a separate thread
-def websocket_server():
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    start_server = websockets.serve(websocket_handler, "localhost", 8001)
-    loop.run_until_complete(start_server)
-    loop.run_forever()
+# Manual shutdown trigger
+async def manual_shutdown():
+    await asyncio.to_thread(input, "Press Enter to stop the server...\n")
+    shutdown_event.set()
 
-# Main function
-def main():
-    # Start UDP Receiver thread
-    prod_thread = threading.Thread(target=Receiver().start)
-    prod_thread.start()
+# Main coroutine
+async def main():
+    queue = asyncio.Queue()
+    udp_task = asyncio.create_task(udp_receiver(host, 65488, queue))
+    ws_server = await websockets.serve(
+        lambda ws, path: websocket_handler(ws, path, queue),
+        "localhost", 8001
+    )
 
-    # Start WebSocket server thread
-    ws_thread = threading.Thread(target=websocket_server)
-    ws_thread.start()
+    await manual_shutdown()
+    udp_task.cancel()
+    ws_server.close()
+    await ws_server.wait_closed()
+    print("WebSocket server stopped.")
 
-    # Wait for both threads to complete
-    prod_thread.join()
-    ws_thread.join()
-
-if __name__ == '__main__':
-    main()
+# Run the main coroutine
+asyncio.run(main())
