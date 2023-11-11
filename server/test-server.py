@@ -1,6 +1,5 @@
 import socket
 import time
-import msgpack
 
 def udp_server():
     # Create a UDP socket
