@@ -48,7 +48,7 @@ async def websocket_handler(websocket, path, queue):
                 message = await websocket.recv()
                 print(f"Received from client: {message}")
                 # Process the message (e.g., forward to UDP server)
-                await send_to_udp_server('localhost', 65487, msgpack.packb({'message': message}))
+                await send_to_udp_server('0.0.0.0', 65487, msgpack.packb({'message': message}))
         except websockets.exceptions.ConnectionClosed:
             print("Client disconnected. Doing cleanup.")
             cancel_tasks()
@@ -108,7 +108,7 @@ async def main():
     # Start WebSocket server
     server = await websockets.serve(
         lambda ws, path: websocket_handler(ws, path, queue),
-        "localhost", WEBSOCKET_SERVER_PORT
+        "0.0.0.0", WEBSOCKET_SERVER_PORT
     )
 
     tasks = [udp_task]
