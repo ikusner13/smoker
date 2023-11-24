@@ -1,0 +1,17 @@
+version: "3"
+
+services:
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    ports:
+      - "65488:65488" # UDP
+      - "8001:8001" # Websocket
+
+  client:
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+    ports:
+      - "8000:80" # Client

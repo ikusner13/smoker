@@ -1,0 +1,4 @@
+FROM nginx:alpine
+
+# Copy the client files to /usr/share/nginx/html
+COPY client /usr/share/nginx/html

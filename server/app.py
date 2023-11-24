@@ -4,9 +4,12 @@ import websockets
 import msgpack
 import json
 
-host = socket.gethostname()
+host = socket.gethostname() #TODO: change to IP address of the server
 
 shutdown_event = asyncio.Event()
+
+UDP_LISTEN_PORT = 65488
+WEBSOCKET_SERVER_PORT = 8001
 
 # Asynchronous UDP receiver
 async def udp_receiver(host, port, queue):
@@ -100,12 +103,12 @@ async def main():
     queue = asyncio.Queue()
 
     # Create UDP receiver task
-    udp_task = asyncio.create_task(udp_receiver(host, 65488, queue))
+    udp_task = asyncio.create_task(udp_receiver(host, UDP_LISTEN_PORT, queue))
 
     # Start WebSocket server
     server = await websockets.serve(
         lambda ws, path: websocket_handler(ws, path, queue),
-        "localhost", 8001
+        "localhost", WEBSOCKET_SERVER_PORT
     )
 
     tasks = [udp_task]

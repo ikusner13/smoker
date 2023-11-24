@@ -9,7 +9,7 @@ Ensure you have the following installed on your machine:
 - Python 3.x
 - pip
 
-## Installation
+## Using Git
 
 1. Clone the repository
 
@@ -26,7 +26,7 @@ python3 -m venv venv
 pip install -r requirements.txt
 ```
 
-## Running the UDP and websocket server
+### Running the UDP and websocket server
 
 To run the server, execute the following command in the terminal:
 
@@ -34,9 +34,29 @@ To run the server, execute the following command in the terminal:
 python3 main.py
 ```
 
-## Running websocket client
+### Running websocket client
 
 ```bash
   cd client
   python3 -m http.server
+```
+
+## Using Docker
+
+### Clone the repository
+
+```bash
+git clone
+```
+
+### Build and run the containers
+
+```bash
+docker-compose up --build
+```
+
+### To stop the containers, run the following command
+
+```bash
+docker-compose down
 ```
